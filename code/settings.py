@@ -16,11 +16,19 @@ FPS = 60 # This is how many Frames per second is displayed on the screen
 # Tile Settings (This is the size of every tile)
 TILESIZE = 64
 
+HITBOX_OFFSET = {
+    'player': -26,
+    'objects': -40,
+    'grass': -10,
+    'invisible': 0
+}
+
 # UI (User interface)
 BAR_HEIGHT = 20 # Height of the bars
 HEALTH_BAR_WIDTH = 200 # Health bar width
 ENERGY_BAR_WIDTH = 140 # Energy bar width
 ITEM_BOX_SIZE = 80 # Item box size
+FONT = os.path.join(sourceFileDir, '../graphics/font/joystix.ttf')
 
 # General Colors
 UI_BG_COLOR = '#222222' # BG color

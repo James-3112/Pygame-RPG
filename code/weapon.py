@@ -14,6 +14,7 @@ class Weapon(pygame.sprite.Sprite):
     # Initialize Function (This is called when the class "Tile" is created)
     def __init__(self, player, groups):
         super().__init__(groups) # Sets the groups
+        self.sprite_type = 'weapon'
         direction = player.status.split('_')[0] # Get the players direction
 
         # Get the weapon image

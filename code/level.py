@@ -9,9 +9,11 @@ from tile import Tile # Import the Tile class from tile
 from player import Player # Import the Player class from player
 from support import * # Import everything from support
 from random import choice # Import choice from random
+from random import randint
 from weapon import Weapon # Import the Weapon class from weapon
 from ui import UI # Import the UI class from ui
 from enemy import Enemy # import the enemy class from enemy
+from particles import AnimationPlayer
 import os # Import os (Operating system)
 
 # Get the absolute path for this directory
@@ -39,6 +41,10 @@ class Level:
 
         # User interface (UI)
         self.ui = UI() # Set ui to the ui class
+
+        self.animation_player = AnimationPlayer()
+
+        self.running = False
 
     # Create Map Function (This makes the map)
     def create_map(self):
@@ -92,7 +98,9 @@ class Level:
                                     monster_name,
                                     (x,y),
                                     [self.visible_sprites, self.attackable_sprites],
-                                    self.obstacle_sprites)
+                                    self.obstacle_sprites,
+                                    self.damage_player,
+                                    self.trigger_death_particles)
 
     # Create Attack Function (This gets pass through to the Player class)
     def create_attack(self):
@@ -109,10 +117,27 @@ class Level:
     def player_attack_logic(self):
         if self.attack_sprites: # If there are attack sprites
             for attack_sprite in self.attack_sprites: # Go through all the attack sprite
-                collision_sprites = pygame.sprite.spritecollide(attack_sprite, self.attackable_sprites, True) # All attack sprites that have collide
+                collision_sprites = pygame.sprite.spritecollide(attack_sprite, self.attackable_sprites, False) # All attack sprites that have collide
                 if collision_sprites: # If there are collision sprites
                     for target_sprite in collision_sprites: # Go through all the collison sprites
-                        target_sprite.kill()
+                        if target_sprite.sprite_type == 'grass':
+                            for leaf in range(randint(3, 6)):
+                                self.animation_player.create_grass_particles(target_sprite.rect.center - pygame.math.Vector2(0, 30), [self.visible_sprites])
+                            target_sprite.kill()
+                        else:
+                            target_sprite.get_damage(self.player, attack_sprite.sprite_type)
+
+    def damage_player(self, amount, attack_type):
+        if self.player.vulnerable:
+            self.player.health -= amount
+            self.player.vulnerable = False
+            self.player.hurt_time = pygame.time.get_ticks()
+
+            # Spawn Particles
+            self.animation_player.create_particles(attack_type, self.player.rect.center, [self.visible_sprites])
+
+    def trigger_death_particles(self, pos, particles_type):
+        self.animation_player.create_particles(particles_type, pos, self.visible_sprites)
 
     # Run Function (This runs when the game runs)
     def run(self):
@@ -128,6 +153,13 @@ class Level:
 
         # Run UI display Function
         self.ui.display(self.player)
+
+        # Sound
+        if not self.running:
+            self.main_sound = pygame.mixer.Sound(os.path.join(sourceFileDir, '../audio/main.ogg'))
+            self.main_sound.set_volume(0.2)
+            self.main_sound.play(loops = -1)
+        self.running = True
 
 # Custom Camera Group (For all visible sprites)
 class YSortCameraGroup(pygame.sprite.Group):
@@ -160,7 +192,7 @@ class YSortCameraGroup(pygame.sprite.Group):
             self.display_surface.blit(sprite.image, offset_pos)
 
     # Enemy Update (So we can pass the player only to enemy and not all visible sprites)    
-    def enemy_update(self,player):
+    def enemy_update(self, player):
         enemy_sprites = [sprite for sprite in self.sprites() if hasattr(sprite,'sprite_type') and sprite.sprite_type == 'enemy'] # Get all the enemy spites
         for enemy in enemy_sprites: # Go through all the enemy and update them
             enemy.enemy_update(player)

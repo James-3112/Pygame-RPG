@@ -22,7 +22,7 @@ class Player(Entity):
         # Set up player (Image, Position, Hitbox)
         self.image = pygame.image.load(os.path.join(sourceFileDir, '../graphics/test/player.png')).convert_alpha() # Set the image
         self.rect = self.image.get_rect(topleft = pos) # Set the position
-        self.hitbox = self.rect.inflate(0, -26) # Set the hitbox size
+        self.hitbox = self.rect.inflate(-6, HITBOX_OFFSET['player']) # Set the hitbox size
 
         # Graphics Settings
         self.import_player_assets() # Import assets
@@ -50,6 +50,15 @@ class Player(Entity):
         self.energy = self.stats['energy'] # Set energy to stats energy
         self.speed = self.stats['speed'] # Set speed to stats speed
 
+        # Damage timer
+        self.vulnerable = True
+        self.hurt_time = None
+        self.invulnerability_duration = 500
+
+        # Import a sound
+        self.weapon_attack_sound = pygame.mixer.Sound(os.path.join(sourceFileDir, '../audio/sword.wav'))
+        self.weapon_attack_sound.set_volume(0.4)
+
     # Import Player Assets Funtion (This import the all the players animations)
     def import_player_assets(self):
         character_path = os.path.join(sourceFileDir, '../graphics/player/') # Get all the player animations
@@ -70,20 +79,20 @@ class Player(Entity):
 
         # Movement Input (Sets direction and status)
         # Up and Down
-        if keys[pygame.K_UP]:
+        if keys[pygame.K_w]:
             self.direction.y = -1
             self.status = 'up'
-        elif keys[pygame.K_DOWN]:
+        elif keys[pygame.K_s]:
             self.direction.y = 1
             self.status = 'down'
         else:
             self.direction.y = 0
 
         # Left and Right
-        if keys[pygame.K_LEFT]:
+        if keys[pygame.K_a]:
             self.direction.x = -1
             self.status = 'left'
-        elif keys[pygame.K_RIGHT]:
+        elif keys[pygame.K_d]:
             self.direction.x = 1
             self.status = 'right'
         else:
@@ -91,10 +100,11 @@ class Player(Entity):
 
         # Attack Input
         # Creates attacks
-        if keys[pygame.K_SPACE]:
+        if pygame.mouse.get_pressed()[0]:
             self.attack_time = pygame.time.get_ticks()
             self.attacking = True
             self.create_attack()
+            self.weapon_attack_sound.play()
 
         # Switching Weapon
         if keys[pygame.K_q] and self.can_switch_weapon:
@@ -135,13 +145,17 @@ class Player(Entity):
         current_time = pygame.time.get_ticks() # Set the current time
 
         if self.attacking: # If attacking
-            if current_time - self.attack_time >= self.attack_cooldown: # If attack cool down has passed
+            if current_time - self.attack_time >= self.attack_cooldown + weapon_data[self.weapon]['cooldown']: # If attack cool down has passed
                 self.attacking = False # Set attacking to False and destroy the attack
                 self.destroy_attack()
 
         if not self.can_switch_weapon: # If can switch weapon = false
             if current_time - self.weapon_switch_time >= self.switch_duration_cooldown: # If switch weaon cool down has passed
                 self.can_switch_weapon = True # Set the can switch weapon to true
+
+        if not self.vulnerable:
+            if current_time - self.hurt_time >= self.invulnerability_duration:
+                self.vulnerable = True
 
     # Animate Funtion (Animates the player)
     def animate(self):
@@ -153,6 +167,18 @@ class Player(Entity):
 
         self.image = animation[int(self.frame_index)] # Set the animation
         self.rect = self.image.get_rect(center = self.hitbox.center) # Recenter the rectangle
+
+        # Flicker
+        if not self.vulnerable:
+            alpha = self.wave_value()
+            self.image.set_alpha(alpha)
+        else:
+            self.image.set_alpha(255)
+
+    def get_full_weapon_damage(self):
+        base_damage = self.stats['attack']
+        weapon_damage = weapon_data[self.weapon]['damage']
+        return base_damage + weapon_damage
 
     # Update (This runs every time the game updates)
     def update(self): # Run all the Funtions

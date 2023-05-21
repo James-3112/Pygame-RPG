@@ -10,7 +10,7 @@ sourceFileDir = os.path.dirname(os.path.abspath(__file__))
 # Main Enemy class
 class Enemy(Entity):
     # Initialize Function (This is called when the class "Enemy" is created)
-    def __init__(self, monster_name, pos, groups, obstacle_sprites):
+    def __init__(self, monster_name, pos, groups, obstacle_sprites, damage_player, trigger_death_particles):
         # General Setup
         super().__init__(groups) # Initialize groups
         self.sprite_type = 'enemy' # Set the sprite type to enemy
@@ -40,7 +40,23 @@ class Enemy(Entity):
         self.can_attack = True # If the monster can attack
         self.attack_time = None # Time of the attack
         self.attack_cooldown = 400 # Attack cool down
+        self.damage_player = damage_player
+        self.trigger_death_particles = trigger_death_particles
 
+        # Invincibility timer
+        self.vulnerable = True
+        self.hit_time = None
+        self.invincivility_duration = 300
+
+        # Sounds
+        self.death_sound = pygame.mixer.Sound(os.path.join(sourceFileDir, '../audio/death.wav'))
+        self.hit_sound = pygame.mixer.Sound(os.path.join(sourceFileDir, '../audio/hit.wav'))
+        self.attack_sound = pygame.mixer.Sound(monster_info['attack_sound'])
+
+        self.death_sound.set_volume(0.2)
+        self.hit_sound.set_volume(0.2)
+        self.attack_sound.set_volume(0.3)
+    
     # Import graphics Function (Import all the monster graphics)
     def import_graphics(self, name):
         self.animations = {'idle': [], 'move': [], 'attack': []} # Define animations
@@ -79,6 +95,8 @@ class Enemy(Entity):
     def actions(self, player):
         if self.status == 'attack': # If attacking then set the attack time to now
             self.attack_time = pygame.time.get_ticks()
+            self.damage_player(self.attack_damage, self.attack_type)
+            self.attack_sound.play()
         elif self.status == 'move': # If moving then set the direction to the direction of the player
             self.direction = self.get_player_distance_direction(player)[1]
         else: # Else set the direction to 0
@@ -96,19 +114,52 @@ class Enemy(Entity):
 
         self.image = animation[int(self.frame_index)] # Set the animation
         self.rect = self.image.get_rect(center = self.hitbox.center) # Recenter the rectangle
+
+        if not self.vulnerable:
+            alpha = self.wave_value()
+            self.image.set_alpha(alpha)
+        else:
+            self.image.set_alpha(255)
     
     # Cool down Function (Handles the cool down for the attacks)
-    def cooldown(self):
+    def cooldowns(self):
+        current_time = pygame.time.get_ticks() # Get the current time (The time at the end of the animate)
+        
         if not self.can_attack: # If can't attack
-            current_time = pygame.time.get_ticks() # Get the current time (The time at the end of the animate)
             if current_time - self.attack_time >= self.attack_cooldown: # If the cool down has passed the set can attack to true
                 self.can_attack = True
 
+        if not self.vulnerable:
+            if current_time - self.hit_time >= self.invincivility_duration:
+                self.vulnerable = True
+
+    def get_damage(self, player, attack_type):
+        if self.vulnerable:
+            self.hit_sound.play()
+            self.direction = self.get_player_distance_direction(player)[1]
+            if attack_type == 'weapon':
+                self.health -= player.get_full_weapon_damage()
+
+            self.hit_time = pygame.time.get_ticks()
+            self.vulnerable = False
+
+    def check_death(self):
+        if self.health <= 0:
+            self.kill()
+            self.trigger_death_particles(self.rect.center, self.monster_name)
+            self.death_sound.play()
+
+    def hit_reaction(self):
+        if not self.vulnerable:
+            self.direction *= -self.resistance
+
     # Update (Updates the enemy)
     def update(self):
+        self.hit_reaction()
         self.move(self.speed)
         self.animate()
-        self.cooldown()
+        self.cooldowns()
+        self.check_death()
 
     # Enemy update (Update only enemy with the player)
     def enemy_update(self, player):

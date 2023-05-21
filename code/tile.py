@@ -14,10 +14,11 @@ class Tile(pygame.sprite.Sprite):
 		
 		# Sets some variables
 		self.sprite_type = sprite_type
+		y_offset = HITBOX_OFFSET[sprite_type]
 		self.image = surface
 
 		if sprite_type == 'object': # If an object
 			self.rect = self.image.get_rect(topleft = (pos[0],pos[1] - TILESIZE)) # Set the hight 2 time bigger
 		else: # Every other sprite
 			self.rect = self.image.get_rect(topleft = pos) # Set the position
-		self.hitbox = self.rect.inflate(0, -10) # Set the hitbox
+		self.hitbox = self.rect.inflate(0, y_offset) # Set the hitbox

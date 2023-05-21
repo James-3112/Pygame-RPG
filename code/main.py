@@ -6,6 +6,11 @@ This file contains the main Game class and the code to run it
 import pygame, sys # Import pygame and system
 from settings import * # Import all from settings (Another python script)
 from level import Level # level class from Level (Another python script)
+from main_menu import Main_Menu
+import os # Import os (Operating system)
+
+# Get the absolute path for this directory
+sourceFileDir = os.path.dirname(os.path.abspath(__file__))
 
 # Main game class
 class Game:
@@ -17,6 +22,16 @@ class Game:
         self.clock = pygame.time.Clock() # Set the clock variable to pygame's clock
 
         self.level = Level() # Set the level to the level class
+        self.main_menu = Main_Menu() # Set the main menu class
+
+        self.isRunning = False # Set the game to not running
+
+        # Sound
+        self.main_menu_sound = pygame.mixer.Sound(os.path.join(sourceFileDir, '../audio/main_menu.ogg'))
+        self.main_menu_sound.set_volume(0.2)
+        self.main_menu_sound.play(loops = -1)
+
+        pygame.mouse.set_visible(False) # Set the mouse to invisible
     
     # Run Function (This is called when the game runs)
     def run(self):
@@ -25,9 +40,17 @@ class Game:
                 if event.type == pygame.QUIT: # If the event type is set to quit then quit the game
                     pygame.quit()
                     sys.exit()
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_SPACE: self.isRunning = True
             
             self.screen.fill('black') # Fills the backgound to black
-            self.level.run() # Runs the level class Run Function
+
+            if self.isRunning:
+                self.main_menu_sound.stop()
+                self.level.run() # Runs the level class Run Function
+            else:
+                self.main_menu.run()
+
             pygame.display.update() # Updates the screen
             self.clock.tick(FPS) # Sets the clock tick rate to FPS (60)
 
