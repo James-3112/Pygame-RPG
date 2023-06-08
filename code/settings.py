@@ -41,7 +41,7 @@ UI_BORDER_COLOR_ACTIVE = 'gold' # Border color active
 
 # Weapons Settings (This contains all the weapon data in a list of lists like cooldown, famage and the graphic for the weapons)
 weapon_data = {
-	'sword': {'cooldown': 100, 'damage': 15,'graphic': os.path.join(sourceFileDir, '../graphics/weapons/sword/full.png')},
+	'sword': {'cooldown': 100, 'damage': 1500,'graphic': os.path.join(sourceFileDir, '../graphics/weapons/sword/full.png')},
 	'lance': {'cooldown': 400, 'damage': 30,'graphic': os.path.join(sourceFileDir, '../graphics/weapons/lance/full.png')},
 	'axe': {'cooldown': 300, 'damage': 20, 'graphic': os.path.join(sourceFileDir, '../graphics/weapons/axe/full.png')},
 	'rapier':{'cooldown': 50, 'damage': 8, 'graphic': os.path.join(sourceFileDir, '../graphics/weapons/rapier/full.png')},

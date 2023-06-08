@@ -7,6 +7,7 @@ import pygame # Inport pygame
 from settings import * # Import everything from settings
 from tile import Tile # Import the Tile class from tile
 from player import Player # Import the Player class from player
+from girl import Girl
 from support import * # Import everything from support
 from random import choice # Import choice from random
 from random import randint
@@ -14,6 +15,8 @@ from weapon import Weapon # Import the Weapon class from weapon
 from ui import UI # Import the UI class from ui
 from enemy import Enemy # import the enemy class from enemy
 from particles import AnimationPlayer
+from end_screen import End_Screen
+from timer_text import Timer
 import os # Import os (Operating system)
 
 # Get the absolute path for this directory
@@ -45,6 +48,9 @@ class Level:
         self.animation_player = AnimationPlayer()
 
         self.running = False
+        
+        self.end_screen = End_Screen()
+        self.timer = Timer()
 
     # Create Map Function (This makes the map)
     def create_map(self):
@@ -86,6 +92,14 @@ class Level:
                                     [self.visible_sprites],
                                     self.obstacle_sprites, self.create_attack,
                                     self.destroy_attack)
+                                
+                            elif col == '395':
+                            # Makes the girl, place them at (x, y)
+                                self.girl = Girl(
+                                    (x, y),
+                                    [self.visible_sprites],
+                                    self.obstacle_sprites)
+                            
                             else: # Else the entity is a enemy
                                 #If the id number equal then set it to the monster
                                 if col == '390': monster_name = 'bamboo'
@@ -147,6 +161,9 @@ class Level:
         
         # Draw all the enemys
         self.visible_sprites.enemy_update(self.player)
+        
+        # Draw all the girls
+        self.visible_sprites.girl_update(self.player)
 
         # Run the player attacking logic
         self.player_attack_logic()
@@ -160,6 +177,14 @@ class Level:
             self.main_sound.set_volume(0.2)
             self.main_sound.play(loops = -1)
         self.running = True
+        
+        if self.player.health <= 0:
+            self.timer.isRunning = False
+            
+            self.end_screen.run()
+            self.timer.run()
+        else:
+            self.timer.run()
 
 # Custom Camera Group (For all visible sprites)
 class YSortCameraGroup(pygame.sprite.Group):
@@ -174,7 +199,7 @@ class YSortCameraGroup(pygame.sprite.Group):
 
         # Floor (This make the floor for the game)
         self.floor_surf = pygame.image.load(os.path.join(sourceFileDir, '../graphics/tilemap/ground.png')).convert()
-        self.floor_rect = self.floor_surf.get_rect(topleft = (-64 * 8, -64 * 8)) # Set the position for the floor
+        self.floor_rect = self.floor_surf.get_rect(topleft = (-64*3, -64*15)) # Set the position for the floor
 
     # Custom Draw Function (The draw the player so they can stand in front and behind)
     def custom_draw(self, player):
@@ -196,3 +221,9 @@ class YSortCameraGroup(pygame.sprite.Group):
         enemy_sprites = [sprite for sprite in self.sprites() if hasattr(sprite,'sprite_type') and sprite.sprite_type == 'enemy'] # Get all the enemy spites
         for enemy in enemy_sprites: # Go through all the enemy and update them
             enemy.enemy_update(player)
+    
+    # Enemy Update (So we can pass the player only to enemy and not all visible sprites)    
+    def girl_update(self, player):
+        girl_sprites = [sprite for sprite in self.sprites() if hasattr(sprite,'sprite_type') and sprite.sprite_type == 'girl'] # Get all the enemy spites
+        for girl in girl_sprites: # Go through all the girls and update them
+            girl.run(player)

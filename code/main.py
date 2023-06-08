@@ -7,6 +7,7 @@ import pygame, sys # Import pygame and system
 from settings import * # Import all from settings (Another python script)
 from level import Level # level class from Level (Another python script)
 from main_menu import Main_Menu
+from how_to_play import How_To_Play
 import os # Import os (Operating system)
 
 # Get the absolute path for this directory
@@ -23,8 +24,9 @@ class Game:
 
         self.level = Level() # Set the level to the level class
         self.main_menu = Main_Menu() # Set the main menu class
+        self.how_to_play = How_To_Play() # Set the main menu class
 
-        self.isRunning = False # Set the game to not running
+        self.isRunning = 0 # Set the game to not running
 
         # Sound
         self.main_menu_sound = pygame.mixer.Sound(os.path.join(sourceFileDir, '../audio/main_menu.ogg'))
@@ -40,14 +42,17 @@ class Game:
                 if event.type == pygame.QUIT: # If the event type is set to quit then quit the game
                     pygame.quit()
                     sys.exit()
-                if event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_SPACE: self.isRunning = True
-            
-            self.screen.fill('black') # Fills the backgound to black
+                if event.type == pygame.KEYDOWN:  
+                    if event.key == pygame.K_SPACE and self.isRunning != 2:
+                        self.isRunning += 1
 
-            if self.isRunning:
+            self.screen.fill('black') # Fills the backgound to black
+            
+            if self.isRunning == 2:
                 self.main_menu_sound.stop()
                 self.level.run() # Runs the level class Run Function
+            elif self.isRunning == 1:
+                self.how_to_play.run()
             else:
                 self.main_menu.run()
 
